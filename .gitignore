@@ -1,0 +1,65 @@
+# Python
+*.py[cod]
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+
+# Virtual Environment
+venv/
+.env/
+env/
+venv.bak/
+
+# Pytest
+.pytest_cache/
+.cache/
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# MacOS
+.DS_Store
+
+# FastAPI
+instance/
+*.db
+*.sqlite3
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# dotenv
+.env
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pylint
+.pylint.d/
+
+# Pyre
+.pyre/
