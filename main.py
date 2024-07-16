@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 app = FastAPI()
 
-# Load environment variables from .env file
+# Load environment variables from .env file ->
 load_dotenv()
 
 # different api routes ->
