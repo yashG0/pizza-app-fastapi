@@ -1,8 +1,9 @@
 import os
 from src.models.jwt_token import Token, TokenData
 import jwt
+from fastapi import HTTPException
 
-KEY = "QifsNW9n6w26mFmeAbEk5yGV3AtVVsQVNGBQa/YitgY"
+KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 
 
@@ -11,6 +12,13 @@ def createAccessToken(data: dict) -> str:
     return encoded_jwt
 
 
-def verifyToken(token: str) -> dict:
-    decodedData = jwt.decode(token=token, key=KEY, algorithms=[ALGORITHM])
-    return decodedData
+async def verifyToken(token: str) -> dict:
+    try:
+        decoded_data = jwt.decode(token, key=KEY, algorithms=[ALGORITHM])
+        return decoded_data
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error decoding token: {str(e)}")

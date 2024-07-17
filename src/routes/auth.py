@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from src.models.user import User, UserOut, UserIn
 from src.utils.password import verifyPassword, getHashPassword
-from src.configs.db import userColl, orderColl
+from src.configs.db import userColl
 from src.utils.jwt_fun import verifyToken, createAccessToken
 
 authRoute = APIRouter()
@@ -35,7 +35,7 @@ async def createUser(form: User, res: Response):
 
 @authRoute.post("/login", response_model=UserOut)
 async def verifyUser(form: UserIn, res: Response):
-    userExist = userColl.find_one({"email": form.email})
+    userExist = await userColl.find_one({"email": form.email})
 
     # check if the user exist or not
     if not userExist:
@@ -54,25 +54,33 @@ async def verifyUser(form: UserIn, res: Response):
     return UserOut(email=userExist["email"])
 
 
-async def getCurrentUser(req: Request):
+async def getCurrentUser(req: Request) -> UserOut:
     token = req.cookies.get("access_token")
 
     # checking the token exist ->
     if not token:
         raise HTTPException(status_code=401, detail="Token is missing")
 
-    # Verify the token ->
-    payload = verifyToken(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    try:
+        # Verify the token ->
+        payload = await verifyToken(token)
+        email = payload.get("email")
 
-    email = payload.get("email")
-    if not email:
-        raise HTTPException(status_code=401, detail="Token does not contain email")
+        if not email:
+            raise HTTPException(status_code=401, detail="Token does not contain email")
 
-    # Retrieve the user from the database
-    user = await userColl.find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=401, detail="User could not be found")
+        # Retrieve the user from the database
+        user = await userColl.find_one({"email": email})
 
-    return UserOut(email=user["email"])
+        if not user:
+            raise HTTPException(status_code=404, detail="User could not be found")
+
+        return UserOut(email=user["email"])
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Failed to get current user {e}")
+
+
+@authRoute.get("/user", response_model=UserOut)
+async def getUser(current_user: UserOut = Depends(getCurrentUser)):
+    return current_user
