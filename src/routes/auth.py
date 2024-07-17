@@ -1,14 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response, Request
 from src.models.user import User, UserOut, UserIn
 from src.utils.password import verifyPassword, getHashPassword
 from src.configs.db import userColl, orderColl
-from src.utils.jwt_fun import verifyToken,createAccessToken
+from src.utils.jwt_fun import verifyToken, createAccessToken
 
 authRoute = APIRouter()
 
 
 @authRoute.post("/signup", response_model=UserOut)
-async def createUser(form: User):
+async def createUser(form: User, res: Response):
     try:
         newUser = form.model_dump()
 
@@ -26,6 +26,7 @@ async def createUser(form: User):
         await userColl.insert_one(newUser)
         token = createAccessToken({"email": newUser["email"]})
         # print(token)
+        res.set_cookie(key="access_token", value=token, httponly=True, secure=True)
         return UserOut(email=newUser["email"])
 
     except Exception as e:
@@ -33,5 +34,45 @@ async def createUser(form: User):
 
 
 @authRoute.post("/login", response_model=UserOut)
-async def verifyUser(form:UserIn):
-    pass
+async def verifyUser(form: UserIn, res: Response):
+    userExist = userColl.find_one({"email": form.email})
+
+    # check if the user exist or not
+    if not userExist:
+        raise HTTPException(status_code=401, detail="User doesn't exist, please sign up first")
+
+    # Verify the password
+    if not verifyPassword(form.password, userExist["password"]):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
+    # Generate a JWT token
+    token = createAccessToken({"email": userExist["email"]})
+
+    # Set the token in the response cookie
+    res.set_cookie(key="access_token", value=token, httponly=True, secure=True, samesite="Strict")
+
+    return UserOut(email=userExist["email"])
+
+
+async def getCurrentUser(req: Request):
+    token = req.cookies.get("access_token")
+
+    # checking the token exist ->
+    if not token:
+        raise HTTPException(status_code=401, detail="Token is missing")
+
+    # Verify the token ->
+    payload = verifyToken(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    email = payload.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Token does not contain email")
+
+    # Retrieve the user from the database
+    user = await userColl.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return UserOut(email=user["email"])
