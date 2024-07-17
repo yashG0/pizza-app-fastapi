@@ -73,6 +73,6 @@ async def getCurrentUser(req: Request):
     # Retrieve the user from the database
     user = await userColl.find_one({"email": email})
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="User could not be found")
 
     return UserOut(email=user["email"])
