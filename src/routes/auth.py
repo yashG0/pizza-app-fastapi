@@ -26,7 +26,7 @@ async def createUser(form: User, res: Response):
         await userColl.insert_one(newUser)
         token = createAccessToken({"email": newUser["email"]})
         # print(token)
-        res.set_cookie(key="access_token", value=token, httponly=True, secure=True)
+        # res.set_cookie(key="access_token", value=token, httponly=True, secure=True)
         return UserOut(email=newUser["email"])
 
     except Exception as e:

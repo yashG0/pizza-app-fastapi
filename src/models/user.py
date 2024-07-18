@@ -7,7 +7,6 @@ class User(BaseModel):
     password: str
     is_staff: bool = False
     is_active: bool = False
-    orders: int = 0
 
 
 class UserOut(BaseModel):
